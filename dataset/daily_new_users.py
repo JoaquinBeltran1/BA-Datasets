@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 # Quarterly user growth
-QAURTERS = [ (120, 40, 28, 24), (45, 35, 36, 23), (27, 14, 7, 3)]
+QUARTERS = [ (120, 40, 28, 24), (45, 35, 36, 23), (27, 14, 7, 3)]
 
 def monthly_growth(years: List):
     """
