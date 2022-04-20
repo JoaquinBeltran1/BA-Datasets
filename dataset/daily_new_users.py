@@ -1,14 +1,18 @@
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 import pandas as pd
+pd.options.mode.chained_assignment = None
 import numpy as np
+# For SIREN num.
+import re
+from secrets import choice
 
 # Quarterly user growth
-QUARTERS = [ (120, 40, 28, 24), (45, 35, 36, 23), (27, 14, 7, 3)]
+QUARTERS = [ (120, 65, 35, 24), (45, 35, 36, 23), (27, 14, 7, 3)]
 
-def monthly_growth(years: List):
+def monthly_growth():
     """
     For each quarter, divide its growth by 3,
     this new value to be assigned to each month
@@ -16,7 +20,7 @@ def monthly_growth(years: List):
     Return a dict with month_number, growth_per_month
     """
     monthly_percentage = []
-    for quarters in years:
+    for quarters in QUARTERS:
         for quarter in quarters:
             each_month = (quarter / 3) / 100            
             monthly_percentage.append([each_month, each_month, each_month])
@@ -279,3 +283,93 @@ def get_lastname(data, list_first_name):
 def full_name_date(full_name, dates):
     full_name["Date"] = dates.values()
     return full_name
+
+
+def siren_company_email_plan_payment(df):
+    siren_list = []
+    for i in range(len(df)):
+        siren_num = re.sub('x', lambda m: choice('123456789'), 'xxxxxxxxx')
+        siren_list.append(siren_num)
+
+    company_list = []
+    for i in range(len(df)):
+        company_name = "company_" + str(i)
+        company_list.append(company_name)
+    
+    df["Company"] = company_list
+    df["SIREN"] = siren_list
+
+    email_list = []
+    for i in range(len(df)):
+        email = df.iat[i, 0][0].lower() + "." + df.iat[i,1].lower() + "@" + df.iat[i,3] + ".com"
+        email_list.append(email)
+
+    product_plan = ["startup", "pro", "enterprise"]
+    plan_prob = [0.7, 0.2, 0.1]
+
+    plans_list = []
+    for i in range(len(df)):
+        plan = np.random.choice(product_plan, p=plan_prob)
+        plans_list.append(plan)
+    
+    payment_method = ["card", "stripe", "bank"]
+    payment_method_prob = [0.7, 0.2, 0.1]
+    
+    payment_method_list = []
+    for i in range(len(df)):
+        payment = np.random.choice(payment_method, p=payment_method_prob)
+        payment_method_list.append(payment)
+    
+    df["email"] = email_list
+    df["plan"] = plans_list
+    df["payment"] = payment_method_list
+
+    return df
+
+def price_per_plan(df):
+    df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
+
+    # Dates where prices changed
+    date_1 = datetime.strptime("01/08/2019", "%d/%m/%Y")
+    date_2 = datetime.strptime("01/06/2020", "%d/%m/%Y")
+
+    # New column
+    df["price"] = np.nan
+    for i in df.index:
+        if df["Date"][i] <= date_1:
+            if df["plan"][i] == "startup":
+                df["price"][i] = 50
+            elif df["plan"][i] == "pro":
+                df["price"][i] = 150
+            else:
+                df["price"][i] = 600
+                
+        elif date_1 < df["Date"][i] <= date_2 :
+            if df["plan"][i] == "startup":
+                df["price"][i] = 85
+            elif df["plan"][i] == "pro":
+                df["price"][i] = 250
+            else:
+                df["price"][i] = 750
+                
+        else:
+            if df["plan"][i] == "startup":
+                df["price"][i] = 180
+            elif df["plan"][i] == "pro":
+                df["price"][i] = 450
+            else:
+                df["price"][i] = 900
+    return df
+
+def friday_of_that_week(dt):
+    days_to_go = 4 - dt.weekday()
+    if days_to_go:
+        dt += timedelta(days_to_go)
+    return dt
+
+def get_friday(df):
+    date_added = []
+    for i in df.index:
+        date_added.append(friday_of_that_week(df["Date"][i]))
+    df["Date Added"] = date_added
+    return df
